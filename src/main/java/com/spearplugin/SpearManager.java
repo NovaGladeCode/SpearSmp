@@ -104,13 +104,9 @@ public class SpearManager {
             lore.add(ChatColor.GRAY + "Level: " + ChatColor.YELLOW + tier.getLevel());
             if (tier.getLunge() > 0) {
                 lore.add(ChatColor.GRAY + "Ability: " + ChatColor.AQUA + "Lunge " + tier.getLunge());
-                // Only add "Right Click" text if we failed to add native Lunge or if we want
-                // both
-                if (Enchantment.getByKey(NamespacedKey.minecraft("lunge")) == null) {
-                    lore.add(ChatColor.DARK_GRAY + "Right-Click to Dash!");
-                }
             }
             lore.add(ChatColor.GOLD + "Unbreakable");
+            lore.add(ChatColor.YELLOW + "Kill higher level players to steal their rank!");
             meta.setLore(lore);
 
             // PDC
@@ -132,6 +128,14 @@ public class SpearManager {
             }
         }
         return null;
+    }
+
+    public SpearTier getTier(String name) {
+        try {
+            return SpearTier.valueOf(name.toUpperCase());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public SpearTier getTierFromItem(ItemStack item) {

@@ -8,3 +8,6 @@ commands:
   getspear:
     description: Get the starting spear
     permission: spear.get
+  spear:
+    description: Main command for spear management
+    permission: spear.admin
