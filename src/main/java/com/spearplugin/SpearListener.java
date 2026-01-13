@@ -7,12 +7,15 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -21,6 +24,7 @@ public class SpearListener implements Listener {
     private final SpearPlugin plugin;
     private final SpearManager spearManager;
     private final Map<UUID, Long> cooldowns = new HashMap<>();
+    private final Map<UUID, ItemStack> savedSpears = new HashMap<>();
 
     public SpearListener(SpearPlugin plugin, SpearManager spearManager) {
         this.plugin = plugin;
@@ -28,10 +32,76 @@ public class SpearListener implements Listener {
     }
 
     @EventHandler
-    public void onKill(PlayerDeathEvent event) {
-        Player victim = event.getEntity();
-        Player killer = victim.getKiller();
+    public void onJoin(PlayerJoinEvent event) {
+        ensureHasSpear(event.getPlayer());
+    }
 
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        if (savedSpears.containsKey(player.getUniqueId())) {
+            ItemStack spear = savedSpears.remove(player.getUniqueId());
+            // Give it back a tick later to ensure inventory exists/is ready
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                player.getInventory().addItem(spear);
+            }, 1L);
+        } else {
+            // If they somehow didn't have one saved, ensure they get a starter one
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> ensureHasSpear(player), 2L);
+        }
+    }
+
+    private void ensureHasSpear(Player player) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (spearManager.getTierFromItem(item) != null) {
+                return;
+            }
+        }
+        player.getInventory().addItem(spearManager.getSpear(SpearManager.SpearTier.WOOD));
+        player.sendMessage(ChatColor.YELLOW + "You received your starting Spear!");
+    }
+
+    @EventHandler
+    public void onDrop(PlayerDropItemEvent event) {
+        if (spearManager.getTierFromItem(event.getItemDrop().getItemStack()) != null) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "You cannot drop your Spear!");
+        }
+    }
+
+    @EventHandler
+    public void onDeath(PlayerDeathEvent event) {
+        Player victim = event.getEntity();
+
+        // Save victim's spear and remove from drops
+        Iterator<ItemStack> iter = event.getDrops().iterator();
+        ItemStack spearToSave = null;
+        while (iter.hasNext()) {
+            ItemStack drop = iter.next();
+            if (spearManager.getTierFromItem(drop) != null) {
+                spearToSave = drop;
+                iter.remove(); // Don't drop it on the ground
+                break; // Assume only one spear
+            }
+        }
+
+        // Also check inventory in case it wasn't dropped (e.g. keepInventory rules
+        // conflict,
+        // though getDrops usually has them).
+        // If we found one in drops, save it.
+        if (spearToSave != null) {
+            savedSpears.put(victim.getUniqueId(), spearToSave);
+        } else {
+            // Check main hand just in case logic varies
+            ItemStack hand = victim.getInventory().getItemInMainHand();
+            if (spearManager.getTierFromItem(hand) != null) {
+                savedSpears.put(victim.getUniqueId(), hand);
+                // It might not be in drops if keepInventory is on, but we want to be sure.
+            }
+        }
+
+        // Handle Killer Level Up
+        Player killer = victim.getKiller();
         if (killer != null && killer.isOnline()) {
             ItemStack mainHand = killer.getInventory().getItemInMainHand();
             SpearManager.SpearTier currentTier = spearManager.getTierFromItem(mainHand);
@@ -39,10 +109,7 @@ public class SpearListener implements Listener {
             if (currentTier != null) {
                 SpearManager.SpearTier nextTier = spearManager.getNextTier(currentTier);
                 if (nextTier != null) {
-                    // Update item
                     ItemStack nextSpear = spearManager.getSpear(nextTier);
-                    // Preserve durability? It's unbreakable.
-                    // Preserve other things? Nah, just replace.
                     killer.getInventory().setItemInMainHand(nextSpear);
                     killer.sendMessage(ChatColor.GREEN + "Your Spear leveled up to " + nextTier.getDisplayName() + "!");
                     killer.playSound(killer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
@@ -61,20 +128,17 @@ public class SpearListener implements Listener {
             SpearManager.SpearTier tier = spearManager.getTierFromItem(item);
 
             if (tier != null && tier.getLunge() > 0) {
-                // Check Cooldown
                 long now = System.currentTimeMillis();
                 long lastUsed = cooldowns.getOrDefault(player.getUniqueId(), 0L);
-                long cooldownTime = 2000; // 2 seconds cooldown?
+                long cooldownTime = 2000;
 
                 if (now - lastUsed < cooldownTime) {
                     player.sendMessage(ChatColor.RED + "Lunge is on cooldown!");
                     return;
                 }
 
-                // Perform Lunge
-                double strength = 1.0 + (tier.getLunge() * 0.3); // Base 1 + 0.3 per level
+                double strength = 1.0 + (tier.getLunge() * 0.3);
                 Vector direction = player.getLocation().getDirection().multiply(strength);
-                // Maybe add a bit of Y lift if on ground to help "lunge"
                 if (player.isOnGround()) {
                     direction.setY(0.5);
                 }
@@ -83,7 +147,7 @@ public class SpearListener implements Listener {
                 player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 1f, 1f);
 
                 cooldowns.put(player.getUniqueId(), now);
-                event.setCancelled(true); // Prevent incidental block interaction
+                event.setCancelled(true);
             }
         }
     }
