@@ -21,9 +21,6 @@ public class SpearListener implements Listener {
         this.spearManager = spearManager;
     }
 
-    // Removed onJoin and onRespawn to prevent auto-giving.
-    // Removed onDrop to allow dropping.
-
     @EventHandler
     public void onDeath(PlayerDeathEvent event) {
         Player victim = event.getEntity();
@@ -37,8 +34,6 @@ public class SpearListener implements Listener {
             ItemStack drop = iter.next();
             if (spearManager.getTierFromItem(drop) != null) {
                 victimSpear = drop;
-                // We keep it in drops by default (it's droppable now)
-                // Unless we SWAP it.
                 break;
             }
         }
@@ -51,9 +46,9 @@ public class SpearListener implements Listener {
 
             if (killerTier != null && victimTier != null) {
                 if (victimTier.getLevel() > killerTier.getLevel()) {
-                    // SWAP: Killer gets Victim Tier
+                    // SWAP/STEAL: Killer gets Victim Tier
 
-                    // Remove Victim's High Tier Spear from DROPS so they don't get it back
+                    // Remove Victim's High Tier Spear from DROPS
                     event.getDrops().remove(victimSpear);
 
                     // Give Killer the High Tier Spear
@@ -63,11 +58,8 @@ public class SpearListener implements Listener {
                             + victimTier.getDisplayName() + "!");
                     killer.playSound(killer.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
 
-                    // Drop the Killer's Old (Low Tier) Spear at Victim's location (Exchange)
-                    ItemStack oldKillerSpear = spearManager.getSpear(killerTier);
-                    victim.getWorld().dropItemNaturally(victim.getLocation(), oldKillerSpear);
-
-                    victim.sendMessage(ChatColor.RED + "You were demoted by " + killer.getName() + "!");
+                    // We do NOT give the victim the old spear. They just lose theirs.
+                    victim.sendMessage(ChatColor.RED + "Your spear was stolen by " + killer.getName() + "!");
 
                 } else if (killerTier.getLevel() >= victimTier.getLevel()) {
                     // Level Up logic for Killer
