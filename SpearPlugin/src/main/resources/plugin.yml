@@ -1,0 +1,10 @@
+name: SpearLeveling
+version: ${project.version}
+main: com.spearplugin.SpearPlugin
+api-version: 1.21
+authors: [Antigravity]
+description: A plugin that levels up your spear when you kill players.
+commands:
+  getspear:
+    description: Get the starting spear
+    permission: spear.get
