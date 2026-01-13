@@ -38,7 +38,7 @@ public class SpearPlugin extends JavaPlugin implements CommandExecutor, TabCompl
         if (command.getName().equalsIgnoreCase("getspear")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
-                player.getInventory().addItem(spearManager.getSpear(SpearManager.SpearTier.WOOD));
+                spearManager.setSpear(player, SpearManager.SpearTier.WOOD);
                 player.sendMessage(ChatColor.GREEN + "You received a Wood Spear!");
                 return true;
             }
@@ -78,6 +78,25 @@ public class SpearPlugin extends JavaPlugin implements CommandExecutor, TabCompl
                 target.sendMessage(ChatColor.GREEN + "You received a " + tier.getDisplayName() + "!");
                 return true;
             }
+
+            if (args.length >= 2 && args[0].equalsIgnoreCase("give")) {
+                if (!sender.hasPermission("spear.give")) {
+                    sender.sendMessage(ChatColor.RED + "No permission.");
+                    return true;
+                }
+
+                String playerName = args[1];
+                Player target = getServer().getPlayer(playerName);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + "Player not found.");
+                    return true;
+                }
+
+                spearManager.setSpear(target, SpearManager.SpearTier.WOOD);
+                sender.sendMessage(ChatColor.GREEN + "Gave starting Spear to " + target.getName());
+                target.sendMessage(ChatColor.YELLOW + "You received your starting Spear!");
+                return true;
+            }
         }
         return false;
     }
@@ -88,6 +107,7 @@ public class SpearPlugin extends JavaPlugin implements CommandExecutor, TabCompl
             if (args.length == 1) {
                 List<String> sub = new ArrayList<>();
                 sub.add("set");
+                sub.add("give");
                 return sub;
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
@@ -96,6 +116,13 @@ public class SpearPlugin extends JavaPlugin implements CommandExecutor, TabCompl
                     tiers.add(t.name());
                 }
                 return tiers;
+            }
+            // Tab complete check for players for "give" and "set"
+            if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
+                return null; // players
+            }
+            if (args.length == 3 && args[0].equalsIgnoreCase("set")) {
+                return null; // players
             }
         }
         return null;

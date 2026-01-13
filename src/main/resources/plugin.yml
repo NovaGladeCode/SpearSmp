@@ -11,3 +11,10 @@ commands:
   spear:
     description: Main command for spear management
     permission: spear.admin
+permissions:
+  spear.get:
+    default: op
+  spear.set:
+    default: op
+  spear.give:
+    default: op
