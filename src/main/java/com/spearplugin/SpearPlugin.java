@@ -73,7 +73,7 @@ public class SpearPlugin extends JavaPlugin implements CommandExecutor, TabCompl
                     return true;
                 }
 
-                target.getInventory().addItem(spearManager.getSpear(tier));
+                spearManager.setSpear(target, tier);
                 sender.sendMessage(ChatColor.GREEN + "Gave " + tier.getDisplayName() + " to " + target.getName());
                 target.sendMessage(ChatColor.GREEN + "You received a " + tier.getDisplayName() + "!");
                 return true;

@@ -68,9 +68,7 @@ public class SpearManager {
             if (cachedMaterial == null) {
                 cachedMaterial = Material.getMaterial(materialName);
                 if (cachedMaterial == null) {
-                    // Fallback to Trident if detailed spears aren't found (compatibility mode)
-                    // Or Stone Sword. But try TRIDENT first as it looks like a spear.
-                    cachedMaterial = Material.TRIDENT; // Assuming user might be on version w/o spear
+                    cachedMaterial = Material.TRIDENT;
                     if (cachedMaterial == null)
                         cachedMaterial = Material.STONE_SWORD;
                 }
@@ -86,12 +84,10 @@ public class SpearManager {
             meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&6" + tier.getDisplayName()));
             meta.setUnbreakable(true);
 
-            // Enchants
             if (tier.getSharpness() > 0) {
                 meta.addEnchant(Enchantment.SHARPNESS, tier.getSharpness(), true);
             }
 
-            // Try Lunge (Native)
             if (tier.getLunge() > 0) {
                 Enchantment lunge = Enchantment.getByKey(NamespacedKey.minecraft("lunge"));
                 if (lunge != null) {
@@ -99,7 +95,6 @@ public class SpearManager {
                 }
             }
 
-            // Lore
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.GRAY + "Level: " + ChatColor.YELLOW + tier.getLevel());
             if (tier.getLunge() > 0) {
@@ -109,10 +104,7 @@ public class SpearManager {
             lore.add(ChatColor.YELLOW + "Kill higher level players to steal their rank!");
             meta.setLore(lore);
 
-            // PDC
             meta.getPersistentDataContainer().set(SPEAR_LEVEL_KEY, PersistentDataType.INTEGER, tier.level);
-
-            // Flags
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
@@ -135,6 +127,28 @@ public class SpearManager {
             return SpearTier.valueOf(name.toUpperCase());
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    public void setSpear(org.bukkit.entity.Player player, SpearTier tier) {
+        ItemStack newSpear = getSpear(tier);
+        boolean replaced = false;
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (contents[i] != null && getTierFromItem(contents[i]) != null) {
+                player.getInventory().setItem(i, newSpear);
+                replaced = true;
+                // clear dupes
+                for (int j = i + 1; j < contents.length; j++) {
+                    if (contents[j] != null && getTierFromItem(contents[j]) != null) {
+                        player.getInventory().setItem(j, null);
+                    }
+                }
+                break;
+            }
+        }
+        if (!replaced) {
+            player.getInventory().addItem(newSpear);
         }
     }
 
