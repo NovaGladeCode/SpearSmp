@@ -89,22 +89,10 @@ public class SpearManager {
             }
 
             if (tier.getLunge() > 0) {
-                Enchantment lunge = Enchantment.getByKey(NamespacedKey.minecraft("lunge"));
-                if (lunge != null) {
-                    meta.addEnchant(lunge, tier.getLunge(), true);
-                }
+                meta.addEnchant(Enchantment.RIPTIDE, tier.getLunge(), true);
             }
 
-            List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.GRAY + "Level: " + ChatColor.YELLOW + tier.getLevel());
-            if (tier.getLunge() > 0) {
-                lore.add(ChatColor.GRAY + "Ability: " + ChatColor.AQUA + "Lunge " + tier.getLunge());
-            }
-            lore.add(ChatColor.GOLD + "Unbreakable");
-            lore.add(ChatColor.YELLOW + "Kill higher level players to steal their rank!");
-            meta.setLore(lore);
-
-            meta.getPersistentDataContainer().set(SPEAR_LEVEL_KEY, PersistentDataType.INTEGER, tier.level);
+            meta.getPersistentDataContainer().set(SPEAR_LEVEL_KEY, PersistentDataType.INTEGER, tier.getLevel());
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 

@@ -20,7 +20,6 @@ public class SpearListener implements Listener {
 
     private final SpearPlugin plugin;
     private final SpearManager spearManager;
-    private final Map<UUID, Long> lungeCooldowns = new HashMap<>();
 
     public SpearListener(SpearPlugin plugin, SpearManager spearManager) {
         this.plugin = plugin;
@@ -102,46 +101,4 @@ public class SpearListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void onInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
-        SpearManager.SpearTier tier = spearManager.getTierFromItem(item);
-
-        if (tier == null)
-            return;
-
-        // Prevent throwing the spear (Trident behavior) or blocking weirdly
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            // Only handle main hand to avoid double firing
-            if (event.getHand() != EquipmentSlot.HAND)
-                return;
-
-            event.setCancelled(true); // Cancel default trident throw/block interaction
-
-            int lungeLevel = tier.getLunge();
-            if (lungeLevel > 0) {
-                // Check Cooldown
-                long now = System.currentTimeMillis();
-                if (lungeCooldowns.containsKey(player.getUniqueId())) {
-                    long lastUse = lungeCooldowns.get(player.getUniqueId());
-                    if (now - lastUse < 2000) { // 2 seconds cooldown
-                        return; // On cooldown
-                    }
-                }
-
-                // Perform Lunge
-                lungeCooldowns.put(player.getUniqueId(), now);
-
-                // Vector math: Forward + slightly up
-                org.bukkit.util.Vector direction = player.getLocation().getDirection();
-                // Normalize and scale. Power increases with lunge level.
-                double power = 1.2 + (lungeLevel * 0.25);
-                player.setVelocity(direction.multiply(power).setY(0.4)); // Fixed Y boost for hop
-
-                player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_1, 1f, 1f);
-                player.sendMessage(ChatColor.AQUA + "Lunge!");
-            }
-        }
-    }
 }
