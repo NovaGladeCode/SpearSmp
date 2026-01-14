@@ -39,30 +39,41 @@ public class SpearListener implements Listener {
         }
 
         // 2. Logic for Swapping/Leveling
-        if (killer != null && killer.isOnline() && victimSpear != null) {
+        // We only care if the KILLER has a spear. If so, they deserve a level up (or
+        // swap).
+        if (killer != null && killer.isOnline()) {
             ItemStack killerSpearItem = killer.getInventory().getItemInMainHand();
             SpearManager.SpearTier killerTier = spearManager.getTierFromItem(killerSpearItem);
-            SpearManager.SpearTier victimTier = spearManager.getTierFromItem(victimSpear);
 
-            if (killerTier != null && victimTier != null) {
-                if (victimTier.getLevel() > killerTier.getLevel()) {
-                    // SWAP/STEAL: Killer gets Victim Tier
+            // Only proceed if killer actually used a spear (or is holding one, ensuring
+            // they are participating)
+            if (killerTier != null) {
+                SpearManager.SpearTier victimTier = (victimSpear != null) ? spearManager.getTierFromItem(victimSpear)
+                        : null;
 
-                    // Remove Victim's High Tier Spear from DROPS
+                // Check for Steal Condition: Victim must have a spear AND it must be better
+                if (victimTier != null && victimTier.getLevel() > killerTier.getLevel()) {
+                    // SWAP/STEAL + UPGRADE: Killer gets Victim Tier + 1
+
                     event.getDrops().remove(victimSpear);
 
-                    // Give Killer the High Tier Spear
-                    ItemStack newKillerSpear = spearManager.getSpear(victimTier);
-                    killer.getInventory().setItemInMainHand(newKillerSpear);
-                    killer.sendMessage(ChatColor.GREEN + "You STOLE " + victim.getName() + "'s "
-                            + victimTier.getDisplayName() + "!");
-                    killer.playSound(killer.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
+                    // Determine new tier: Victim's Tier + 1
+                    SpearManager.SpearTier targetTier = spearManager.getNextTier(victimTier);
+                    if (targetTier == null)
+                        targetTier = victimTier; // Max level
 
-                    // We do NOT give the victim the old spear. They just lose theirs.
+                    ItemStack newKillerSpear = spearManager.getSpear(targetTier);
+                    killer.getInventory().setItemInMainHand(newKillerSpear);
+                    killer.sendMessage(ChatColor.GREEN + "You STOLE " + victim.getName() + "'s rank and Leveled Up to "
+                            + targetTier.getDisplayName() + "!");
+                    killer.playSound(killer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+
                     victim.sendMessage(ChatColor.RED + "Your spear was stolen by " + killer.getName() + "!");
 
-                } else if (killerTier.getLevel() >= victimTier.getLevel()) {
-                    // Level Up logic for Killer
+                } else {
+                    // Standard Level Up logic (Killer Tier + 1)
+                    // Happens if victim has NO spear OR victim has WORSE/EQUAL spear
+
                     SpearManager.SpearTier nextTier = spearManager.getNextTier(killerTier);
                     if (nextTier != null) {
                         killer.getInventory().setItemInMainHand(spearManager.getSpear(nextTier));
@@ -72,7 +83,6 @@ public class SpearListener implements Listener {
                     } else {
                         killer.sendMessage(ChatColor.GOLD + "Max Level reached!");
                     }
-                    // Victim spear remains in drops (dropped naturally)
                 }
             }
         }
