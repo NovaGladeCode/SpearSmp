@@ -10,17 +10,12 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public class SpearListener implements Listener {
-
     private final SpearPlugin plugin;
     private final SpearManager spearManager;
-    private final Map<UUID, Long> cooldowns = new HashMap<>();
 
     public SpearListener(SpearPlugin plugin, SpearManager spearManager) {
         this.plugin = plugin;
@@ -54,37 +49,10 @@ public class SpearListener implements Listener {
     }
 
     @EventHandler
-    public void onInteract(PlayerInteractEvent event) {
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            Player player = event.getPlayer();
-            ItemStack item = player.getInventory().getItemInMainHand();
-            SpearManager.SpearTier tier = spearManager.getTierFromItem(item);
-
-            if (tier != null && tier.getLunge() > 0) {
-                // Check Cooldown
-                long now = System.currentTimeMillis();
-                long lastUsed = cooldowns.getOrDefault(player.getUniqueId(), 0L);
-                long cooldownTime = 2000; // 2 seconds cooldown?
-
-                if (now - lastUsed < cooldownTime) {
-                    player.sendMessage(ChatColor.RED + "Lunge is on cooldown!");
-                    return;
-                }
-
-                // Perform Lunge
-                double strength = 1.0 + (tier.getLunge() * 0.3); // Base 1 + 0.3 per level
-                Vector direction = player.getLocation().getDirection().multiply(strength);
-                // Maybe add a bit of Y lift if on ground to help "lunge"
-                if (player.isOnGround()) {
-                    direction.setY(0.5);
-                }
-
-                player.setVelocity(direction);
-                player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 1f, 1f);
-
-                cooldowns.put(player.getUniqueId(), now);
-                event.setCancelled(true); // Prevent incidental block interaction
-            }
+    public void onDrop(org.bukkit.event.player.PlayerDropItemEvent event) {
+        if (spearManager.getTierFromItem(event.getItemDrop().getItemStack()) != null) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "You cannot drop your spear!");
         }
     }
 }

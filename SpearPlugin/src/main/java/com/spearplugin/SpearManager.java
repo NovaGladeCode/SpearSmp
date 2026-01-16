@@ -27,9 +27,12 @@ public class SpearManager {
     public enum SpearTier {
         WOOD(1, "Wood Spear", Material.WOODEN_SWORD, 0, 0),
         STONE(2, "Stone Spear", Material.STONE_SWORD, 1, 0),
-        COPPER(3, "Copper Spear", Material.GOLDEN_SWORD, 2, 1), // Using Gold for visual distinction of Copper? Or maybe Stone?
-        // Actually, user wants Gold Tier later. Maybe use Stone Sword with CMD if resource pack.
-        // I will use GOLDEN_SWORD for Copper (looks coppery) and maybe differentiate Gold Spear with something else or just same material different name/enchants.
+        COPPER(3, "Copper Spear", Material.GOLDEN_SWORD, 2, 1), // Using Gold for visual distinction of Copper? Or maybe
+                                                                // Stone?
+        // Actually, user wants Gold Tier later. Maybe use Stone Sword with CMD if
+        // resource pack.
+        // I will use GOLDEN_SWORD for Copper (looks coppery) and maybe differentiate
+        // Gold Spear with something else or just same material different name/enchants.
         // Actually, let's use IRON_SWORD for Iron, DIAMOND for Diamond.
         // Issue: Copper vs Gold visuals.
         // I'll use GOLDEN_SWORD for Copper and for Gold, relying on name/glint/lore.
@@ -52,11 +55,25 @@ public class SpearManager {
             this.lunge = lunge;
         }
 
-        public int getLevel() { return level; }
-        public String getDisplayName() { return displayName; }
-        public Material getMaterial() { return material; }
-        public int getSharpness() { return sharpness; }
-        public int getLunge() { return lunge; }
+        public int getLevel() {
+            return level;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
+
+        public int getSharpness() {
+            return sharpness;
+        }
+
+        public int getLunge() {
+            return lunge;
+        }
     }
 
     public ItemStack getSpear(SpearTier tier) {
@@ -65,23 +82,27 @@ public class SpearManager {
         if (meta != null) {
             meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&6" + tier.getDisplayName()));
             meta.setUnbreakable(true);
-            
+
             // Attributes
             // Remove vanilla attack speed/damage to normalize? Or keep vanilla?
-            // "Spear" usually implies slower/harder? Or just standard sword. I'll keep vanilla for now.
-            
+            // "Spear" usually implies slower/harder? Or just standard sword. I'll keep
+            // vanilla for now.
+
             // Enchants
             if (tier.getSharpness() > 0) {
                 meta.addEnchant(Enchantment.SHARPNESS, tier.getSharpness(), true);
             }
 
+            if (tier.getLunge() > 0) {
+                Enchantment lunge = Enchantment.getByKey(NamespacedKey.minecraft("lunge"));
+                if (lunge != null) {
+                    meta.addEnchant(lunge, tier.getLunge(), true);
+                }
+            }
+
             // Lore
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.GRAY + "Level: " + ChatColor.YELLOW + tier.getLevel());
-            if (tier.getLunge() > 0) {
-                lore.add(ChatColor.GRAY + "Ability: " + ChatColor.AQUA + "Lunge " + tier.getLunge());
-                lore.add(ChatColor.DARK_GRAY + "Right-Click to Dash!");
-            }
             lore.add(ChatColor.GOLD + "Unbreakable");
             meta.setLore(lore);
 
@@ -108,11 +129,14 @@ public class SpearManager {
     }
 
     public SpearTier getTierFromItem(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return null;
-        Integer level = item.getItemMeta().getPersistentDataContainer().get(SPEAR_LEVEL_KEY, PersistentDataType.INTEGER);
+        if (item == null || !item.hasItemMeta())
+            return null;
+        Integer level = item.getItemMeta().getPersistentDataContainer().get(SPEAR_LEVEL_KEY,
+                PersistentDataType.INTEGER);
         if (level != null) {
             for (SpearTier tier : SpearTier.values()) {
-                if (tier.level == level) return tier;
+                if (tier.level == level)
+                    return tier;
             }
         }
         return null;

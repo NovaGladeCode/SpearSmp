@@ -89,7 +89,10 @@ public class SpearManager {
             }
 
             if (tier.getLunge() > 0) {
-                meta.addEnchant(Enchantment.RIPTIDE, tier.getLunge(), true);
+                Enchantment lunge = Enchantment.getByKey(NamespacedKey.minecraft("lunge"));
+                if (lunge != null) {
+                    meta.addEnchant(lunge, tier.getLunge(), true);
+                }
             }
 
             meta.getPersistentDataContainer().set(SPEAR_LEVEL_KEY, PersistentDataType.INTEGER, tier.getLevel());
